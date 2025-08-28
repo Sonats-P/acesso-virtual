@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Search, User, Calendar, FileText } from 'lucide-react';
+import { Search, User, Calendar, FileText, LogIn, LogOut } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Visitor } from '@/types/visitor';
 import { formatCPF } from '@/utils/cpf-validator';
@@ -10,9 +11,10 @@ import { formatCPF } from '@/utils/cpf-validator';
 interface VisitorListProps {
   visitors: Visitor[];
   onVisitorSelect?: (visitor: Visitor) => void;
+  onStatusChange?: (id: string, status: 'inside' | 'outside') => void;
 }
 
-export const VisitorList: React.FC<VisitorListProps> = ({ visitors, onVisitorSelect }) => {
+export const VisitorList: React.FC<VisitorListProps> = ({ visitors, onVisitorSelect, onStatusChange }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredVisitors = visitors.filter(visitor => {
@@ -23,14 +25,30 @@ export const VisitorList: React.FC<VisitorListProps> = ({ visitors, onVisitorSel
     );
   });
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    }).format(date);
+    }).format(new Date(dateString));
+  };
+
+  const getStatusConfig = (status: 'inside' | 'outside') => {
+    return status === 'inside' 
+      ? { 
+          text: 'No estabelecimento',
+          variant: 'default' as const,
+          bgColor: 'bg-green-500/20 text-green-400 border-green-500/50',
+          icon: LogIn
+        }
+      : { 
+          text: 'Fora do estabelecimento',
+          variant: 'secondary' as const,
+          bgColor: 'bg-red-500/20 text-red-400 border-red-500/50',
+          icon: LogOut
+        };
   };
 
   return (
@@ -90,14 +108,44 @@ export const VisitorList: React.FC<VisitorListProps> = ({ visitors, onVisitorSel
                     <div className="flex items-center gap-2 mt-2">
                       <Calendar className="w-4 h-4 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">
-                        {formatDate(visitor.createdAt)}
+                        {formatDate(visitor.created_at)}
                       </span>
                     </div>
                   </div>
                   
-                  <Badge variant="secondary" className="bg-accent/50">
-                    Cadastrado
-                  </Badge>
+                  <div className="flex flex-col items-end gap-2">
+                    <Badge className={getStatusConfig(visitor.status).bgColor}>
+                      {React.createElement(getStatusConfig(visitor.status).icon, { className: "w-3 h-3 mr-1" })}
+                      {getStatusConfig(visitor.status).text}
+                    </Badge>
+                    
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onStatusChange?.(visitor.id, 'inside');
+                        }}
+                        disabled={visitor.status === 'inside'}
+                        className="h-7 px-2 text-xs"
+                      >
+                        <LogIn className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onStatusChange?.(visitor.id, 'outside');
+                        }}
+                        disabled={visitor.status === 'outside'}
+                        className="h-7 px-2 text-xs"
+                      >
+                        <LogOut className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

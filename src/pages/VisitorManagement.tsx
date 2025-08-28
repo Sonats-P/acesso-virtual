@@ -11,7 +11,7 @@ type ViewMode = 'list' | 'add' | 'view';
 export const VisitorManagement: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewMode>('list');
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
-  const { visitors, addVisitor, isLoading } = useVisitors();
+  const { visitors, addVisitor, updateVisitorStatus, isLoading } = useVisitors();
 
   const handleAddVisitor = async (data: CreateVisitorData) => {
     try {
@@ -101,6 +101,7 @@ export const VisitorManagement: React.FC = () => {
           <VisitorList
             visitors={visitors}
             onVisitorSelect={handleVisitorSelect}
+            onStatusChange={updateVisitorStatus}
           />
         );
     }

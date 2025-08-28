@@ -1,25 +1,54 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Visitor, CreateVisitorData } from '@/types/visitor';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useVisitors = () => {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  const fetchVisitors = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('visitors')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setVisitors((data as Visitor[]) || []);
+    } catch (error) {
+      toast({
+        title: "Erro ao carregar visitantes",
+        description: "Não foi possível carregar a lista de visitantes.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchVisitors();
+  }, [fetchVisitors]);
+
   const addVisitor = useCallback(async (data: CreateVisitorData) => {
     setIsLoading(true);
     try {
-      // Simular API call - aqui você conectaria com Supabase
-      const newVisitor: Visitor = {
-        id: Date.now().toString(),
-        name: data.name,
-        cpf: data.cpf,
-        photo: data.photo,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+      const { data: newVisitor, error } = await supabase
+        .from('visitors')
+        .insert({
+          name: data.name,
+          cpf: data.cpf,
+          photo: data.photo,
+          status: data.status || 'inside'
+        })
+        .select()
+        .single();
 
-      setVisitors(prev => [newVisitor, ...prev]);
+      if (error) throw error;
+
+      setVisitors(prev => [newVisitor as Visitor, ...prev]);
       
       toast({
         title: "Visitante cadastrado!",
@@ -39,6 +68,33 @@ export const useVisitors = () => {
     }
   }, []);
 
+  const updateVisitorStatus = useCallback(async (id: string, status: 'inside' | 'outside') => {
+    try {
+      const { error } = await supabase
+        .from('visitors')
+        .update({ status })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setVisitors(prev => prev.map(visitor => 
+        visitor.id === id ? { ...visitor, status } : visitor
+      ));
+
+      const statusText = status === 'inside' ? 'entrou no' : 'saiu do';
+      toast({
+        title: "Status atualizado!",
+        description: `Visitante ${statusText} estabelecimento.`
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao atualizar status",
+        description: "Não foi possível atualizar o status do visitante.",
+        variant: "destructive"
+      });
+    }
+  }, []);
+
   const searchVisitors = useCallback((term: string) => {
     if (!term) return visitors;
     
@@ -52,7 +108,9 @@ export const useVisitors = () => {
   return {
     visitors,
     addVisitor,
+    updateVisitorStatus,
     searchVisitors,
-    isLoading
+    isLoading,
+    fetchVisitors
   };
 };
