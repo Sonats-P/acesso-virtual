@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, User, Calendar, FileText, LogIn, LogOut, Clock, MessageSquare, Trash2, X } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Search, User, Calendar, FileText, LogIn, LogOut, Clock, MessageSquare, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,8 +20,10 @@ interface VisitorListProps {
 
 export const VisitorList: React.FC<VisitorListProps> = ({ visitors, onVisitorSelect, onStatusChange, onDeleteVisitor, getVisitorHistory }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  const filteredVisitors = React.useMemo(() => {
+  const filteredVisitors = useMemo(() => {
     if (!searchTerm.trim()) return visitors;
 
     const searchLower = searchTerm.toLowerCase().trim();
@@ -43,6 +45,21 @@ export const VisitorList: React.FC<VisitorListProps> = ({ visitors, onVisitorSel
       return false;
     });
   }, [visitors, searchTerm]);
+
+  // Paginação
+  const totalPages = Math.ceil(filteredVisitors.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedVisitors = filteredVisitors.slice(startIndex, endIndex);
+
+  // Reset página quando busca muda
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
 
   // Usar as funções de formatação com fuso horário de Brasília
   const formatDate = formatDateBR;
@@ -99,7 +116,7 @@ export const VisitorList: React.FC<VisitorListProps> = ({ visitors, onVisitorSel
       </Card>
 
       <div className="space-y-4">
-        {filteredVisitors.length === 0 ? (
+        {paginatedVisitors.length === 0 ? (
           <Card className="bg-gradient-card">
             <CardContent className="py-8 text-center">
               <User className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -109,7 +126,7 @@ export const VisitorList: React.FC<VisitorListProps> = ({ visitors, onVisitorSel
             </CardContent>
           </Card>
         ) : (
-          filteredVisitors.map((visitor) => (
+          paginatedVisitors.map((visitor) => (
             <Card
               key={visitor.id}
               className="bg-gradient-card shadow-card hover:shadow-lg transition-smooth cursor-pointer"
@@ -236,7 +253,70 @@ export const VisitorList: React.FC<VisitorListProps> = ({ visitors, onVisitorSel
         )}
       </div>
 
-      {visitors.length > 0 && (
+      {/* Paginação */}
+      {totalPages > 1 && (
+        <Card className="bg-gradient-card">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages} • {filteredVisitors.length} visitante{filteredVisitors.length !== 1 ? 's' : ''} encontrado{filteredVisitors.length !== 1 ? 's' : ''}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+
+                {/* Números das páginas */}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 5) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNumber = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNumber = totalPages - 4 + i;
+                    } else {
+                      pageNumber = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <Button
+                        key={pageNumber}
+                        variant={currentPage === pageNumber ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => goToPage(pageNumber)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {pageNumber}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {visitors.length > 0 && totalPages <= 1 && (
         <div className="text-center text-sm text-muted-foreground">
           {searchTerm ? (
             <>
