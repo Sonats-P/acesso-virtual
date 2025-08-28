@@ -2,19 +2,23 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { User, Camera, Save } from 'lucide-react';
+import { User, Camera, Save, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { CameraCapture } from './CameraCapture';
-import { formatCPF, validateCPF } from '@/utils/cpf-validator';
-import { CreateVisitorData } from '@/types/visitor';
+
+import { CreateVisitorData, DocumentType } from '@/types/visitor';
 import { toast } from '@/hooks/use-toast';
 
 const visitorSchema = z.object({
   name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
-  cpf: z.string().refine(validateCPF, 'CPF inválido')
+  document_type: z.string().min(1, 'Tipo de documento é obrigatório'),
+  document_number: z.string().min(1, 'Número do documento é obrigatório'),
+  visit_reason: z.string().min(3, 'Motivo da visita deve ter pelo menos 3 caracteres')
 });
 
 type VisitorFormData = z.infer<typeof visitorSchema>;
@@ -39,13 +43,6 @@ export const VisitorForm: React.FC<VisitorFormProps> = ({ onSubmit, onCancel }) 
     resolver: zodResolver(visitorSchema)
   });
 
-  const cpfValue = watch('cpf');
-
-  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCPF(e.target.value);
-    setValue('cpf', formatted);
-  };
-
   const handlePhotoCapture = (blob: Blob) => {
     setPhotoBlob(blob);
     const url = URL.createObjectURL(blob);
@@ -59,7 +56,7 @@ export const VisitorForm: React.FC<VisitorFormProps> = ({ onSubmit, onCancel }) 
 
   const handleFormSubmit = async (data: VisitorFormData) => {
     let photoBase64 = '';
-    
+
     if (photoBlob) {
       const reader = new FileReader();
       photoBase64 = await new Promise((resolve) => {
@@ -70,8 +67,12 @@ export const VisitorForm: React.FC<VisitorFormProps> = ({ onSubmit, onCancel }) 
 
     const submitData: CreateVisitorData = {
       name: data.name,
-      cpf: data.cpf,
-      photo: photoBase64 || undefined
+      cpf: data.document_type === 'CPF' ? data.document_number : undefined, // CPF apenas se for CPF
+      document_type: data.document_type as DocumentType,
+      document_number: data.document_number,
+      visit_reason: data.visit_reason,
+      photo: photoBase64 || undefined,
+      status: 'inside' // Visitante entra automaticamente ao ser cadastrado
     };
 
     onSubmit(submitData);
@@ -109,18 +110,50 @@ export const VisitorForm: React.FC<VisitorFormProps> = ({ onSubmit, onCancel }) 
             )}
           </div>
 
+
+
           <div className="space-y-2">
-            <Label htmlFor="cpf">CPF *</Label>
+            <Label htmlFor="document_type">Tipo de Documento *</Label>
+            <Select onValueChange={(value) => setValue('document_type', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo de documento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CPF">CPF</SelectItem>
+                <SelectItem value="RG">RG</SelectItem>
+                <SelectItem value="CNH">CNH</SelectItem>
+                <SelectItem value="Passaporte">Passaporte</SelectItem>
+                <SelectItem value="Outro">Outro</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.document_type && (
+              <p className="text-sm text-destructive">{errors.document_type.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="document_number">Número do Documento *</Label>
             <Input
-              id="cpf"
-              value={cpfValue || ''}
-              onChange={handleCPFChange}
-              placeholder="000.000.000-00"
-              maxLength={14}
+              id="document_number"
+              {...register('document_number')}
+              placeholder="Digite o número do documento"
               className="transition-smooth"
             />
-            {errors.cpf && (
-              <p className="text-sm text-destructive">{errors.cpf.message}</p>
+            {errors.document_number && (
+              <p className="text-sm text-destructive">{errors.document_number.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="visit_reason">Motivo da Visita *</Label>
+            <Textarea
+              id="visit_reason"
+              {...register('visit_reason')}
+              placeholder="Descreva o motivo da visita..."
+              className="transition-smooth min-h-[80px]"
+            />
+            {errors.visit_reason && (
+              <p className="text-sm text-destructive">{errors.visit_reason.message}</p>
             )}
           </div>
 
@@ -164,8 +197,8 @@ export const VisitorForm: React.FC<VisitorFormProps> = ({ onSubmit, onCancel }) 
                 Cancelar
               </Button>
             )}
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isSubmitting}
               className="flex-1 shadow-button"
             >
