@@ -28,7 +28,8 @@ export const formatTimeBR = (dateString: string) => {
 
 // Função para formatar apenas a data no fuso de Brasília
 export const formatDateOnlyBR = (dateString: string) => {
-    const date = new Date(dateString);
+    // Para datas no formato YYYY-MM-DD, adicionar horário para evitar problemas de timezone
+    const date = dateString.includes('T') ? new Date(dateString) : new Date(dateString + 'T12:00:00');
 
     return new Intl.DateTimeFormat('pt-BR', {
         day: '2-digit',

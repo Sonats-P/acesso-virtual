@@ -141,7 +141,7 @@ export const VisitorDetails: React.FC<VisitorDetailsProps> = ({
                             <div>
                                 <p className="text-sm text-muted-foreground">Última Visita</p>
                                 <p className="text-sm font-medium">
-                                    {formatDate(getCurrentVisit()?.created_at || visitor.created_at)}
+                                    {formatDateOnly(getCurrentVisit()?.visit_date || visitor.visit_date)}
                                 </p>
                             </div>
                         </div>
