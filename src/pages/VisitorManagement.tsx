@@ -151,6 +151,19 @@ export const VisitorManagement: React.FC = () => {
   };
 
   const renderContent = () => {
+    // Loading state global
+    if (isLoading && currentView === 'list') {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-700">Carregando visitantes...</h3>
+            <p className="text-sm text-gray-500">Aguarde enquanto buscamos os dados</p>
+          </div>
+        </div>
+      );
+    }
+
     switch (currentView) {
       case 'add':
         return (
@@ -178,6 +191,7 @@ export const VisitorManagement: React.FC = () => {
             onStatusChange={handleStatusChange}
             onDeleteVisitor={handleDeleteVisitor}
             getVisitorHistory={getVisitorHistory}
+            isLoading={isLoading}
           />
         );
     }
