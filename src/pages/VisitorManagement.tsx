@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, ArrowLeft, LogOut, Loader2 } from 'lucide-react';
+import { Plus, Users, ArrowLeft, LogOut, Loader2, List } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { VisitorForm } from '@/components/VisitorForm';
@@ -19,12 +19,13 @@ export const VisitorManagement: React.FC = () => {
   const { user, logout } = useAuth();
   const { visitors, addVisitor, updateVisitorStatus, deleteVisitor, getUniqueVisitors, getVisitorHistory, isLoading } = useVisitors();
 
+  // Filtrar apenas visitantes dentro do estabelecimento
+  const visitorsInside = getUniqueVisitors().filter(visitor => visitor.status === 'inside');
+
   // Monitorar quando não há visitantes e garantir que estamos na tela inicial
   useEffect(() => {
-    const uniqueVisitors = getUniqueVisitors();
-
     // Só redirecionar se não há visitantes E estamos visualizando um visitante específico
-    if (uniqueVisitors.length === 0 && currentView === 'view') {
+    if (visitorsInside.length === 0 && currentView === 'view') {
       setCurrentView('list');
       setSelectedVisitor(null);
     }
@@ -87,12 +88,20 @@ export const VisitorManagement: React.FC = () => {
     const headerConfig = {
       list: {
         title: 'Controle de Acesso - Portaria',
-        subtitle: `Bem-vindo, ${user?.username} | ${getUniqueVisitors().length} visitante${getUniqueVisitors().length !== 1 ? 's' : ''} únicos | ${visitors.length} visita${visitors.length !== 1 ? 's' : ''} registrada${visitors.length !== 1 ? 's' : ''}`,
+        subtitle: `Bem-vindo, ${user?.username} | ${visitorsInside.length} visitante${visitorsInside.length !== 1 ? 's' : ''} no estabelecimento | ${visitors.length} visita${visitors.length !== 1 ? 's' : ''} registrada${visitors.length !== 1 ? 's' : ''}`,
         action: (
           <div className="flex gap-2">
             <Button onClick={() => setCurrentView('add')} className="shadow-button">
               <Plus className="w-4 h-4 mr-2" />
               Novo Visitante
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/all-visitors')}
+              className="shadow-button"
+            >
+              <List className="w-4 h-4 mr-2" />
+              Todos os Visitantes
             </Button>
             <Button
               variant="outline"
@@ -186,7 +195,7 @@ export const VisitorManagement: React.FC = () => {
       default:
         return (
           <VisitorList
-            visitors={getUniqueVisitors()}
+            visitors={visitorsInside}
             onVisitorSelect={handleVisitorSelect}
             onStatusChange={handleStatusChange}
             onDeleteVisitor={handleDeleteVisitor}

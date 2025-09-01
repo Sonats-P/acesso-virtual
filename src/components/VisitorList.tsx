@@ -50,6 +50,19 @@ export const VisitorList: React.FC<VisitorListProps> = ({
       // Buscar por motivo da visita
       if (visitor.visit_reason && visitor.visit_reason.toLowerCase().includes(searchLower)) return true;
 
+      // Buscar por status
+      if (visitor.status && visitor.status.toLowerCase().includes(searchLower)) return true;
+
+      // Buscar por data de visita
+      if (visitor.visit_date && visitor.visit_date.includes(searchLower)) return true;
+
+      // Buscar por tipo de documento
+      if (visitor.document_type && visitor.document_type.toLowerCase().includes(searchLower)) return true;
+
+      // Buscar por horário de entrada/saída
+      if (visitor.entry_time && visitor.entry_time.includes(searchLower)) return true;
+      if (visitor.exit_time && visitor.exit_time.includes(searchLower)) return true;
+
       return false;
     });
   }, [visitors, searchTerm]);
@@ -129,7 +142,7 @@ export const VisitorList: React.FC<VisitorListProps> = ({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nome, documento, CPF ou motivo da visita..."
+              placeholder="Buscar por nome, documento, CPF, motivo, status, data, horário..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-10"
